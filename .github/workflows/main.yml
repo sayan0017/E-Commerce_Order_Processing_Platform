@@ -59,15 +59,15 @@ jobs:
       # ── Install Dependencies ────────────────────────────────────────
       - name: Install Auth Service dependencies
         working-directory: services/auth
-        run: npm ci
+        run: npm install
 
       - name: Install Product Service dependencies
         working-directory: services/product
-        run: npm ci
+        run: npm install
 
       - name: Install Order Service dependencies
         working-directory: services/order
-        run: npm ci
+        run: npm install
 
       - name: Install Test dependencies
         working-directory: tests
