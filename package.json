@@ -1,0 +1,26 @@
+{
+  "name": "ecommerce-order-platform",
+  "version": "1.0.0",
+  "description": "Microservices-based E-Commerce Order Processing Platform",
+  "private": true,
+  "scripts": {
+    "dev:auth": "cd services/auth && npm run dev",
+    "dev:product": "cd services/product && npm run dev",
+    "dev:order": "cd services/order && npm run dev",
+    "build:auth": "cd services/auth && npm run build",
+    "build:product": "cd services/product && npm run build",
+    "build:order": "cd services/order && npm run build",
+    "install:all": "npm install && cd services/auth && npm install && cd ../product && npm install && cd ../order && npm install && cd ../../tests && npm install",
+    "migrate:auth": "cd services/auth && npx prisma migrate deploy",
+    "migrate:product": "cd services/product && npx prisma migrate deploy",
+    "migrate:order": "cd services/order && npx prisma migrate deploy",
+    "migrate:all": "npm run migrate:auth && npm run migrate:product && npm run migrate:order",
+    "generate:all": "cd services/auth && npx prisma generate && cd ../product && npx prisma generate && cd ../order && npx prisma generate",
+    "test": "cd tests && npm test",
+    "docker:up": "docker-compose up --build -d",
+    "docker:down": "docker-compose down -v",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "keywords": ["microservices", "ecommerce", "typescript", "docker"],
+  "license": "MIT"
+}

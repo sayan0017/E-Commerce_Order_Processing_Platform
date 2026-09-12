@@ -1,0 +1,29 @@
+{
+  "name": "@ecommerce/tests",
+  "version": "1.0.0",
+  "description": "API integration tests for the E-Commerce platform",
+  "scripts": {
+    "test": "jest --forceExit --detectOpenHandles --runInBand",
+    "test:verbose": "jest --forceExit --detectOpenHandles --runInBand --verbose",
+    "test:watch": "jest --watch --runInBand"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.20.0",
+    "@types/express": "^5.0.6",
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "express": "^5.2.1",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^29.5.12",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.14.0",
+    "jest": "^29.7.0",
+    "prisma": "^5.20.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.5.0"
+  }
+}

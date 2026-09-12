@@ -1,0 +1,171 @@
+name: E-Commerce Platform CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_ENV: test
+  JWT_SECRET: test_jwt_secret_for_ci
+  JWT_EXPIRES_IN: 1h
+
+jobs:
+  test:
+    name: Run Tests & Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ecommerce
+          POSTGRES_PASSWORD: ecommerce_secret
+          POSTGRES_DB: ecommerce
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ecommerce -d ecommerce"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            services/auth/package-lock.json
+            services/product/package-lock.json
+            services/order/package-lock.json
+            tests/package-lock.json
+
+      # ── Install Dependencies ────────────────────────────────────────
+      - name: Install Auth Service dependencies
+        working-directory: services/auth
+        run: npm ci
+
+      - name: Install Product Service dependencies
+        working-directory: services/product
+        run: npm ci
+
+      - name: Install Order Service dependencies
+        working-directory: services/order
+        run: npm ci
+
+      - name: Install Test dependencies
+        working-directory: tests
+        run: npm ci
+
+      # ── Generate Prisma Clients ─────────────────────────────────────
+      - name: Generate Auth Prisma Client
+        working-directory: services/auth
+        run: npx prisma generate
+
+      - name: Generate Product Prisma Client
+        working-directory: services/product
+        run: npx prisma generate
+
+      - name: Generate Order Prisma Client
+        working-directory: services/order
+        run: npx prisma generate
+
+      # ── Run Database Migrations ─────────────────────────────────────
+      - name: Run Auth migrations
+        working-directory: services/auth
+        env:
+          DATABASE_URL: postgresql://ecommerce:ecommerce_secret@localhost:5432/ecommerce?schema=auth
+        run: npx prisma migrate deploy
+
+      - name: Run Product migrations
+        working-directory: services/product
+        env:
+          DATABASE_URL: postgresql://ecommerce:ecommerce_secret@localhost:5432/ecommerce?schema=product
+        run: npx prisma migrate deploy
+
+      - name: Run Order migrations
+        working-directory: services/order
+        env:
+          DATABASE_URL: postgresql://ecommerce:ecommerce_secret@localhost:5432/ecommerce?schema=orders
+        run: npx prisma migrate deploy
+
+      # ── Build Services ──────────────────────────────────────────────
+      - name: Build Auth Service
+        working-directory: services/auth
+        run: npm run build
+
+      - name: Build Product Service
+        working-directory: services/product
+        run: npm run build
+
+      - name: Build Order Service
+        working-directory: services/order
+        run: npm run build
+
+      # ── Run Tests ──────────────────────────────────────────────────
+      - name: Run API Tests
+        working-directory: tests
+        env:
+          AUTH_SERVICE_URL: http://localhost:3001
+          PRODUCT_SERVICE_URL: http://localhost:3002
+          ORDER_SERVICE_URL: http://localhost:3003
+          AUTH_DATABASE_URL: postgresql://ecommerce:ecommerce_secret@localhost:5432/ecommerce?schema=auth
+          PRODUCT_DATABASE_URL: postgresql://ecommerce:ecommerce_secret@localhost:5432/ecommerce?schema=product
+          ORDER_DATABASE_URL: postgresql://ecommerce:ecommerce_secret@localhost:5432/ecommerce?schema=orders
+          REDIS_URL: redis://localhost:6379
+        run: npm test
+
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Auth Service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/auth
+          push: false
+          tags: ecommerce/auth-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Product Service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/product
+          push: false
+          tags: ecommerce/product-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Order Service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./services/order
+          push: false
+          tags: ecommerce/order-service:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

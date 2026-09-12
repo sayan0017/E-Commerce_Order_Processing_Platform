@@ -1,0 +1,43 @@
+// Prisma schema for the Product Service.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Product catalog with optimized indexes for high-volume queries
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @db.Text
+  price       Decimal  @db.Decimal(10, 2)
+  category    String
+  sku         String   @unique
+  imageUrl    String?  @map("image_url")
+  stock       Int      @default(0)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // ── Performance Indexes ──────────────────────────────────────────
+  // Category filtering (WHERE category = ?)
+  @@index([category])
+
+  // Active products by category (most common query pattern)
+  @@index([isActive, category])
+
+  // SKU lookups for inventory operations
+  @@index([sku])
+
+  // Price range queries and sorting
+  @@index([price])
+
+  // Composite for paginated active listings sorted by creation date
+  @@index([isActive, createdAt])
+
+  @@map("products")
+}
