@@ -41,7 +41,7 @@ function generateToken(user: { id: string; email: string; role: string }): strin
       role: user.role,
     },
     config.jwt.secret,
-    { expiresIn: config.jwt.expiresIn as string }
+    { expiresIn: config.jwt.expiresIn as jwt.SignOptions['expiresIn'] }
   );
 }
 
